@@ -1,0 +1,92 @@
+---
+title: "Data Cleaning"
+output: html_document
+---
+
+Load packages
+```{r}
+library(forecast) 
+library(ggplot2)
+library(TSA)
+library(readr)
+library(lubridate)
+library(plyr)
+
+#import data:
+pdx <- read.csv("https://www.wrh.noaa.gov/pqr/climate/Portland_dailyclimatedata.csv", skip = 6) #skip 6 rows before taking the first row as variable name
+```
+
+
+Import data and filter target variables
+
+## Rains
+```{r}
+#consider only rain data, so we only need precipitation
+pdx_rains <- pdx[pdx$X=="PR", ]
+
+# pull out and clean up the amount of rain by month
+rainfall_month <- pdx_rains$AVG.or.Total
+rainfall_month <- gsub("M", NA, rainfall_month) #M is missing
+rainfall_month <- gsub("T", 0, rainfall_month) #T is missing too, but they are close to 0 output, so I set T=0
+rainfall_month <- as.numeric(rainfall_month)
+
+# this is a time series we could work with
+rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
+
+plot(rain.ts, main = "Portland, OR. Monthly Average Rainfall (1940-2019)",
+     xlab = "Year",
+     ylab = "Precipitation (in)")
+
+# there are two missing values
+table(is.na(rain.ts))
+```
+
+
+
+
+
+## Max temp
+```{r}
+#consider only max temperature data
+max_tem <- pdx[pdx$X=="TX", ]
+
+# pull out data and clean up 
+max_t_month <- max_tem$AVG.or.Total
+max_t_month <- gsub("M", NA, max_t_month)
+max_t_month <- as.numeric(max_t_month)
+
+# this is a time series we could work with
+max_t_ts <- ts(max_t_month, start = c(1940,10), deltat = 1/12)
+
+plot(max_t_ts, main = "Portland, OR. Maximun Monthly Temp (1940-2019)",
+     xlab = "Year",
+     ylab = "Temperature (F)")
+
+# there are two missing values
+table(is.na(max_t_ts))
+```
+
+
+
+
+## Min temp
+```{r}
+#consider only min temperature data
+min_tem <- pdx[pdx$X=="TN", ]
+
+# pull out data and clean up 
+min_t_month <- min_tem$AVG.or.Total
+min_t_month <- gsub("M", NA, min_t_month)
+min_t_month <- as.numeric(min_t_month)
+
+# this is a time series we could work with
+min_t_ts <- ts(min_t_month, start = c(1940,10), deltat = 1/12)
+
+plot(min_t_ts, main = "Portland, OR. Maximun Monthly Temp (1940-2019)",
+     xlab = "Year",
+     ylab = "Temperature (F)")
+
+# there are two missing values
+table(is.na(min_t_ts))
+```
+
