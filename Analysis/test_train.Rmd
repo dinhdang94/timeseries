@@ -1,0 +1,37 @@
+---
+title: "train_test"
+author: "Mikkel Bjornson"
+date: "3/6/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For this file, run the 'Data cleaning.RMD' file first. 
+
+This file is setup to create the training and test sets for model creation. 
+
+```{r}
+## extract time
+t<- time(max_t_ts)
+## create data frame of all variables
+df<- data.frame(time = t, max_t = max_t_ts, min_t = min_t_ts, rain = rain.ts)
+
+#length
+L<-nrow(df)
+
+## split df
+tr<-1:(L-181)
+train<- df[tr,]
+test<- df[-tr,]
+
+## save: may need to change the path to desired location
+write.csv(train, "~/osu/ST566/project/timeseries/Data/train.csv", row.names = T)
+write.csv(test, "~/osu/ST566/project/timeseries/Data/test.csv", row.names = T)
+```
+
+
+
+
