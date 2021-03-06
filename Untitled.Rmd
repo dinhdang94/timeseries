@@ -1,9 +1,0 @@
----
-title: "draft"
-output: html_document
----
-```{r}
-fndsjfnsdjnfjdvndsjvnlsdnv
-flsdnflksdn
-```
-
