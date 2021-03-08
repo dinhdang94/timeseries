@@ -21,7 +21,7 @@ df<- data.frame(time = t, max_t = max_t_ts, min_t = min_t_ts, rain = rain.ts)
 
 #length
 L<-nrow(df)
-
+ 
 ## split df
 tr<-1:(L-181)
 train<- df[tr,]
