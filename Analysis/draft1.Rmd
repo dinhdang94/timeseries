@@ -1,5 +1,5 @@
 ---
-title: "Data Cleaning"
+title: "Final project"
 output: html_document
 ---
 
@@ -18,28 +18,6 @@ pdx <- read.csv("https://www.wrh.noaa.gov/pqr/climate/Portland_dailyclimatedata.
 
 
 Import data and filter target variables
-```{r}
-#define replacing NA by its month average function
-```{r}
-#define replacing NA by its month average function
-rmna.avg=function(rain.ts,rainfall_month){
-
-        b=month.abb[cycle(rain.ts)]
-        a=data.frame(b,rainfall_month)
-
-        for (i in 1:length(a[,2])){
-                if (is.na(a[i,2])){
-                        month=a[i,1]
-                        a[i,2]=mean(a[a[,1]==month,2], na.rm=TRUE)
-        
-           }
-        }
-        rainfall_month=a[,2]
-        return(rainfall_month)
-}
-
-```
-```
 
 ## Rains
 ```{r}
@@ -59,18 +37,9 @@ plot(rain.ts, main = "Portland, OR. Monthly Average Rainfall (1940-2019)",
      xlab = "Year",
      ylab = "Precipitation (in)")
 
-# there are two missing values
+# there are two missing values(should we remove them since it is only two NA?)
 table(is.na(rain.ts))
-# replace NA by its month average 
-rainfall_month=rmna.avg(rain.ts, rainfall_month)
-rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
-table(is.na(rain.ts))
-
 ```
-```
-
-
-
 
 
 ## Max temp
@@ -92,12 +61,6 @@ plot(max_t_ts, main = "Portland, OR. Maximun Monthly Temp (1940-2019)",
 
 # there are two missing values
 table(is.na(max_t_ts))
-# replace NA by its month average 
-rainfall_month=rmna.avg(rain.ts, rainfall_month)
-rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
-table(is.na(rain.ts))
-
-```
 ```
 
 
@@ -116,17 +79,37 @@ min_t_month <- as.numeric(min_t_month)
 # this is a time series we could work with
 min_t_ts <- ts(min_t_month, start = c(1940,10), deltat = 1/12)
 
-plot(min_t_ts, main = "Portland, OR. Maximun Monthly Temp (1940-2019)",
+plot(min_t_ts, main = "Portland, OR. Minimum Monthly Temp (1940-2019)",
      xlab = "Year",
      ylab = "Temperature (F)")
 
-# there are two missing values
+# there are two missing values(replace the missing value by avg(monthly))
 table(is.na(min_t_ts))
-# replace NA by its month average 
-rainfall_month=rmna.avg(rain.ts, rainfall_month)
-rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
-table(is.na(rain.ts))
-
 ```
+
+
+
+
+
+```{r}
+#consider only SN
+snow<- pdx[pdx$X=="SN", ]
+
+# pull out data and clean up 
+snow_month <- snow$AVG.or.Total
+snow_month <- gsub("M", NA, snow_month)
+snow_month <- gsub("T", 0, snow_month)
+snow_month <- as.numeric(snow_month)
+
+# this is a time series we could work with
+snow_ts <- ts(snow_month, start = c(1940,10), deltat = 1/12)
+
+plot(snow_month, main = "Portland, OR. Monthly Snow (1940-2019)",
+     xlab = "Year",
+     ylab = "Thickness (Inch)",
+     type='l')
+
+# there are one missing values
+table(is.na(snow_month))
 ```
 
