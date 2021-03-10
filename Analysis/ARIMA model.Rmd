@@ -56,7 +56,7 @@ rainfall_month <- gsub("T", 0, rainfall_month) #T is missing too, but they are c
 rainfall_month <- as.numeric(rainfall_month)
 
 # this is a time series we could work with
-rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
+rain.ts <- ts(rainfall_month, start = c(1940,10),deltat = 1/12)
 
 plot(rain.ts, main = "Portland, OR. Monthly Average Rainfall (1940-2019)",
      xlab = "Year",
@@ -70,15 +70,58 @@ rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
 table(is.na(rain.ts))
 
 ```
+## set up training data as the data before 2005
+```{r}
+rain.ts.train=ts(rainfall_month, start = c(1940,10), end=c(2004,12),deltat = 1/12)
+```
 
 ## ARIMA Model analysis
 ```{r}
 #difference the data
-rain.ts.diff=diff(rain.ts)
+rain.ts.diff=diff(rain.ts.train, lag=12)
+rain.ts.diff=diff(rain.ts.diff, lag=12)
 plot(rain.ts.diff)
+```
+```{r}
+#ACF and PACF
+par(mfrow=c(1,2))
+acf(rain.ts.diff, lag.max=48, main='ACF')
+pacf(rain.ts.diff,lag.max=120, main='PACF')
+```
+
+```{r}
+# fit a SARIMA model
+# 1 time difference
+# seasonal lag 12 are zero out at ACF and PACF; so ARMA(1,1) model in seasonal. 
+# non seasonal; ACF is cut off after lag1; but PACF is tail off. so it is MA(1)
+# we will try ARIMA(0,1,1)x(1,1,1)12, ARIMA(1,1,1)x(0,1,1)12, ARIMA(0,1,2)x(0,1,1)12
+
+(rain.fit1=arima(rain.ts.train, order=c(0,1,1), seasonal=list(order=c(1,1,1), period=12)))
+(rain.fit2=arima(rain.ts.train, order=c(1,1,1), seasonal=list(order=c(0,1,1), period=12)))
+(rain.fit3=arima(rain.ts.train, order=c(0,1,2), seasonal=list(order=c(0,1,1), period=12)))
+
+```
+## ARIMA(1,1,1)x(0,1,1)12 model provide min AIC: 3056.97
+
+```{r}
+#checking if residual is white noise
+tsdiag(rain.fit2)
+qqnorm(rain.fit2$residuals)
+qqline(rain.fit2$residuals)
 ```
 
 
+
+## predict and compare to the test data
+```{r}
+pred=predict(rain.fit2, n.ahead=181)
+#plot the original data
+plot(rain.ts, xlim=c(2005,2020), xlab='Rain Fall')
+#adding the model prediction as red line; 95% confidence as blue line
+lines(pred$pred, col='red')
+lines(pred$pred-2*pred$se, col='blue')
+lines(pred$pred+2*pred$se, col='blue')
+```
 
 
 
