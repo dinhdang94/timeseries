@@ -9,22 +9,77 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+Load packages
+```{r}
+library(forecast) 
+library(ggplot2)
+library(TSA)
+library(readr)
+library(lubridate)
+library(plyr)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+#import data:
+pdx <- read.csv("https://www.wrh.noaa.gov/pqr/climate/Portland_dailyclimatedata.csv", skip = 6) #skip 6 rows before taking the first row as variable name
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+Import data and filter target variables
+```{r}
+#define replacing NA by its month average function
+rmna.avg=function(rain.ts,rainfall_month){
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+        b=month.abb[cycle(rain.ts)]
+        a=data.frame(b,rainfall_month)
+
+        for (i in 1:length(a[,2])){
+                if (is.na(a[i,2])){
+                        month=a[i,1]
+                        a[i,2]=mean(a[a[,1]==month,2], na.rm=TRUE)
+        
+           }
+        }
+        rainfall_month=a[,2]
+        return(rainfall_month)
+}
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Rains
+```{r}
+#consider only rain data, so we only need precipitation
+pdx_rains <- pdx[pdx$X=="PR", ]
+
+# pull out and clean up the amount of rain by month
+rainfall_month <- pdx_rains$AVG.or.Total
+rainfall_month <- gsub("M", NA, rainfall_month) #M is missing
+rainfall_month <- gsub("T", 0, rainfall_month) #T is missing too, but they are close to 0 output, so I set T=0
+rainfall_month <- as.numeric(rainfall_month)
+
+# this is a time series we could work with
+rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
+
+plot(rain.ts, main = "Portland, OR. Monthly Average Rainfall (1940-2019)",
+     xlab = "Year",
+     ylab = "Precipitation (in)")
+
+# there are two missing values
+table(is.na(rain.ts))
+# replace NA by its month average 
+rainfall_month=rmna.avg(rain.ts, rainfall_month)
+rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
+table(is.na(rain.ts))
+
+```
+
+## ARIMA Model analysis
+```{r}
+#difference the data
+rain.ts.diff=diff(rain.ts)
+plot(rain.ts.diff)
+```
+
+
+
+
+
+

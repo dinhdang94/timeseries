@@ -20,6 +20,8 @@ pdx <- read.csv("https://www.wrh.noaa.gov/pqr/climate/Portland_dailyclimatedata.
 Import data and filter target variables
 ```{r}
 #define replacing NA by its month average function
+```{r}
+#define replacing NA by its month average function
 rmna.avg=function(rain.ts,rainfall_month){
 
         b=month.abb[cycle(rain.ts)]
@@ -29,10 +31,14 @@ rmna.avg=function(rain.ts,rainfall_month){
                 if (is.na(a[i,2])){
                         month=a[i,1]
                         a[i,2]=mean(a[a[,1]==month,2], na.rm=TRUE)
+        
            }
         }
+        rainfall_month=a[,2]
+        return(rainfall_month)
 }
 
+```
 ```
 
 ## Rains
@@ -56,9 +62,11 @@ plot(rain.ts, main = "Portland, OR. Monthly Average Rainfall (1940-2019)",
 # there are two missing values
 table(is.na(rain.ts))
 # replace NA by its month average 
-rain.ts=rmna.avg(rain.ts, rainfall_month)
+rainfall_month=rmna.avg(rain.ts, rainfall_month)
+rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
 table(is.na(rain.ts))
 
+```
 ```
 
 
@@ -85,8 +93,11 @@ plot(max_t_ts, main = "Portland, OR. Maximun Monthly Temp (1940-2019)",
 # there are two missing values
 table(is.na(max_t_ts))
 # replace NA by its month average 
-max_t_ts=rmna.avg(max_t_ts, max_t_month)
-table(is.na(max_t_ts))
+rainfall_month=rmna.avg(rain.ts, rainfall_month)
+rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
+table(is.na(rain.ts))
+
+```
 ```
 
 
@@ -112,7 +123,10 @@ plot(min_t_ts, main = "Portland, OR. Maximun Monthly Temp (1940-2019)",
 # there are two missing values
 table(is.na(min_t_ts))
 # replace NA by its month average 
-min_t_ts=rmna.avg(min_t_ts, min_t_month)
-table(is.na(min_t_ts))
+rainfall_month=rmna.avg(rain.ts, rainfall_month)
+rain.ts <- ts(rainfall_month, start = c(1940,10), deltat = 1/12)
+table(is.na(rain.ts))
+
+```
 ```
 
