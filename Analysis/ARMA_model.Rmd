@@ -1,0 +1,176 @@
+---
+title: "ARMA_model"
+author: "Mikkel Bjornson"
+date: "3/7/2021"
+output: pdf_document
+---
+
+```{r setup}
+## Library
+library(readr)
+library(ggplot2)
+library(gridExtra)
+library(TSA)
+library(here)
+
+## Data
+train <- read.csv(here("Data","train.csv"))
+test <- read.csv(here("Data","test.csv"))
+```
+
+
+
+```{r exploratory}
+p1<-ggplot(train, aes(time, rain ))+
+  geom_line(na.rm = T)
+
+p2<-ggplot(train, aes(time, rain ))+
+  geom_line(na.rm = T)+
+  coord_cartesian(xlim = c(1960,1965))
+
+grid.arrange(p1,p2)
+```
+
+
+
+Examining the time plot above we see evidence of seasonality. The plot of the subset of the time series highlights the seasonality with increased rain in the fall to spring and decreased rain in summer months. Many of the years appear to have a dip in rainfall in the middle of winter, but is not consistent for all years. At this point, the variance appears to be relatively stable, and no clear trend is present. 
+
+```{r}
+## extract rain as ts
+rain.ts<- ts(train$rain, start = c(1940,10), frequency = 12)
+## estimate seasonality
+month<- factor(cycle(rain.ts))
+sea <- lm(rain.ts~month)
+sea.ts<- ts(sea$fitted.values, start = c(1940,11), frequency = 12)
+## Remove seasonality
+rain.rand<- ts(rain.ts-sea.ts, start = c(1940,11), frequency = 12)
+
+## time plot of deseasoned data
+ggplot(data.frame(time = train$time[-1], rand = c(rain.rand)), aes(x=time, y=rand))+
+  geom_line()
+```
+
+The updated time series appears to be stationary with no seasonality or trend. 
+
+```{r}
+## auto correlation
+acf(rain.rand, na.action = na.pass)
+pacf(rain.rand, na.action = na.pass)
+eacf(rain.rand)
+```
+
+Examining the ACF, PACF, and EACF it appears that AR(1) or MA(1) might both be good options. We will also fit an ARMA(1,1) model and choose based upon AIC. 
+
+
+```{r}
+m1<-arima(rain.rand, order = c(1,0,0), include.mean = F)
+m2<-arima(rain.rand, order = c(0,0,1), include.mean = F)
+m3<-arima(rain.rand, order = c(1,0,1), include.mean = F)
+m1
+m2
+m3
+```
+
+
+The AR(1) model appears to have the best AIC value followed closely by the MA1 model. The ARMA(1,1) model does not provide a better AIC or log likelihood and will be abandoned at this point for the more parsimonious options. 
+
+```{r}
+tsdiag(m1)
+pacf(m1$residuals)
+qqnorm(m1$residuals)
+qqline(m1$residuals)
+
+tsdiag(m2)
+pacf(m2$residuals)
+qqnorm(m2$residuals)
+qqline(m2$residuals)
+
+
+```
+
+The residuals appear to not satisfy the normal condition for the MLE method. They will be refit using the least squares method. 
+
+
+```{r}
+m4<-arima(rain.rand, order = c(1,0,0), include.mean = F, method = 'CSS')
+m5<-arima(rain.rand, order = c(0,0,1), include.mean = F, method = 'CSS')
+m6<-arima(rain.rand, order = c(1,0,1), include.mean = F, method = 'CSS')
+m4
+m5
+m6
+```
+
+We refit the initial three models using the sum of squares method. There does not appear to be a large difference when comparing with the maximum likelihood models. The partial log likelihood is about the same for all three models. We procede using the AR(1) and MA(1) models. 
+
+```{r}
+pacf(m4$residuals)
+tsdiag(m4)
+
+pacf(m5$residuals)
+tsdiag(m5)
+```
+
+Both models appear to pass diagnostics. 
+
+
+```{r}
+nahead<- 12*15
+
+# predict random
+ar1.rand.preds<- predict(m4, n.ahead =nahead )
+ma1.rand.preds<- predict(m5, n.ahead =nahead )
+
+# predict seasonality
+sea.pred<- ts(sea$fitted.values[1:nahead], start = 2005, frequency = 12)
+
+# prediction
+ar1.preds<- sea.pred+ar1.rand.preds$pred
+ma1.preds<- sea.pred+ma1.rand.preds$pred
+pred.time<- time(preds) ## Hey Mikkel, I could not find where preds comes from!!
+
+ggplot(train, aes(time, rain ))+
+  geom_line(na.rm = T)+
+  geom_line(data = data.frame(t = pred.time, preds=ar1.preds), aes(x=t, y=preds), col='red')
+
+ggplot(train, aes(time, rain ))+
+  geom_line(na.rm = T)+
+  geom_line(data = data.frame(t = pred.time, preds=ma1.preds), aes(x=t, y=preds), col='blue')
+```
+
+The predictions based on the AR(1) model are plotted in red above. Visually, these predictions do not appear to follow the same pattern as we see in the time series. The MA(1) model provided similar predictions plotted above in blue. We will use the Mean square error (MSE) as a measure to estimate the extent to which it matches the hold out data saved for testing. 
+
+```{r}
+rain.test<- ts(test$rain, start = 2005, frequency = 12)
+
+ar1.mse<- sum((ar1.preds-rain.test)^2)/nahead
+ma1.mse<- sum((ma1.preds-rain.test)^2)/nahead
+
+ar1.mse
+ma1.mse
+```
+
+The MSE for both models is very similar. Both models appear to be producing simiilar predictions. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
