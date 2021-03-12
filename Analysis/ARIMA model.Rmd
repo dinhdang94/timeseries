@@ -73,6 +73,18 @@ table(is.na(rain.ts))
 ## set up training data as the data before 2005
 ```{r}
 rain.ts.train=ts(rainfall_month, start = c(1940,10), end=c(2004,12),deltat = 1/12)
+## extract time
+t<- time(max_t_ts)
+## create data frame of all variables
+df<- data.frame(time = t, max_t = max_t_ts, min_t = min_t_ts, rain = rain.ts)
+
+#length
+L<-nrow(df)
+ 
+## split df
+tr<-1:(L-181)
+train<- df[tr,]
+test<- df[-tr,]
 ```
 
 ## ARIMA Model analysis
@@ -86,7 +98,7 @@ plot(rain.ts.diff)
 #ACF and PACF
 par(mfrow=c(1,2))
 acf(rain.ts.diff, lag.max=48, main='ACF')
-pacf(rain.ts.diff,lag.max=120, main='PACF')
+pacf(rain.ts.diff,lag.max=48, main='PACF')
 ```
 
 ```{r}
@@ -96,33 +108,52 @@ pacf(rain.ts.diff,lag.max=120, main='PACF')
 # non seasonal; ACF is cut off after lag1; but PACF is tail off. so it is MA(1)
 # we will try ARIMA(0,1,1)x(1,1,1)12, ARIMA(1,1,1)x(0,1,1)12, ARIMA(0,1,2)x(0,1,1)12
 
-(rain.fit1=arima(rain.ts.train, order=c(0,1,1), seasonal=list(order=c(1,1,1), period=12)))
-(rain.fit2=arima(rain.ts.train, order=c(1,1,1), seasonal=list(order=c(0,1,1), period=12)))
-(rain.fit3=arima(rain.ts.train, order=c(0,1,2), seasonal=list(order=c(0,1,1), period=12)))
-
+(rain.fit1=arima(rain.ts.train, order=c(0,0,2), seasonal=list(order=c(0,1,1), period=12)))
+(rain.fit2=arima(rain.ts.train, order=c(1,0,1), seasonal=list(order=c(0,1,1), period=12)))
+(rain.fit3=arima(rain.ts.train, order=c(0,0,3), seasonal=list(order=c(0,1,2), period=12)))
+(rain.fit4=arima(rain.ts.train, order=c(0,0,1), seasonal=list(order=c(0,1,1), period=12)))
+#try ARIMA
+(rain.fit4=arima(rain.ts.train, order=c(1,0,1), include.mean=F, method="ML"))
 ```
-## ARIMA(1,1,1)x(0,1,1)12 model provide min AIC: 3056.97
+## SARIMA(0,0,1)x(0,1,1)12 model provide min AIC: 3048.69
+## SARMIA(1,0,1)x(0,1,1)12 model provide close AIC 3050.19
 
 ```{r}
 #checking if residual is white noise
+tsdiag(rain.fit4)
 tsdiag(rain.fit2)
-qqnorm(rain.fit2$residuals)
-qqline(rain.fit2$residuals)
-```
+qqnorm(rain.fit4$residuals)
+qqline(rain.fit4$residuals)
 
+res=rain.fit2$residuals
+acf(res)
+pacf(res)
+```
+it looks like rain.fit2 has better white noise residual. 
 
 
 ## predict and compare to the test data
 ```{r}
-pred=predict(rain.fit2, n.ahead=181)
+pred2=predict(rain.fit2, n.ahead=181)
+pred4=predict(rain.fit4, n.ahead=181)
 #plot the original data
 plot(rain.ts, xlim=c(2005,2020), xlab='Rain Fall')
 #adding the model prediction as red line; 95% confidence as blue line
-lines(pred$pred, col='red')
-lines(pred$pred-2*pred$se, col='blue')
-lines(pred$pred+2*pred$se, col='blue')
+lines(pred2$pred, col='red')
+lines(pred2$pred-2*pred2$se, col='blue')
+lines(pred2$pred+2*pred2$se, col='blue')
 ```
 
-
+```{r}
+# calculate MSE
+rain.test<- ts(test$rain, start = 2005, frequency = 12)
+trail2=pred2$pred
+trail4=pred4$pred
+mse2=sum((trail2-rain.test)^2, na.rm=TRUE)/181
+mse4= sum((trail4-rain.test)^2, na.rm=TRUE)/181
+mse2
+mse4
+```
+MSE in ARMIA(1,0,1)x(0,1,1)12 model is much smaller. 
 
 

@@ -14,8 +14,13 @@ library(TSA)
 library(here)
 
 ## Data
+<<<<<<< HEAD
 train <- read_csv(here("Data", "train.csv"))
 test <- read_csv(here("Data", "test.csv"))
+=======
+train <- read.csv(here("Data","train.csv"))
+test <- read.csv(here("Data","test.csv"))
+>>>>>>> 6a8b72fe47b21962d0229c5c81a039ba53228fa0
 ```
 
 
@@ -126,7 +131,11 @@ sea.pred<- ts(sea$fitted.values[1:nahead], start = 2005, frequency = 12)
 # prediction
 ar1.preds<- sea.pred+ar1.rand.preds$pred
 ma1.preds<- sea.pred+ma1.rand.preds$pred
+<<<<<<< HEAD
 pred.time<- time(ar1.preds)
+=======
+pred.time<- time(ar1.preds) ## Hey Mikkel, I could not find where preds comes from!!
+>>>>>>> 6a8b72fe47b21962d0229c5c81a039ba53228fa0
 
 ggplot(train, aes(time, rain ))+
   geom_line(na.rm = T)+
